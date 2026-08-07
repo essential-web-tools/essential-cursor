@@ -1,4 +1,3 @@
-```markdown
 <p align="center">
   <img src="essential-cursor-logo.png" alt="Essential Cursor Logo" width="250">
 </p>
@@ -390,4 +389,3 @@ Key terms:
 <p align="center">
   <a href="#top">Back to top ↑</a>
 </p>
-```
