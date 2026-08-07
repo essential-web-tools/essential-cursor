@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Essential Cursor — Documentação Viva</title>
+  <link rel="stylesheet" href="../dist/essential-cursors.min.css">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --border: #e0e0e0;
+      --card-bg: #f5f5f5;
+      --accent: #2563eb;
+      --focus: #3b82f6;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f0f;
+      --text: #f0f0f0;
+      --border: #333333;
+      --card-bg: #1a1a1a;
+      --accent: #60a5fa;
+      --focus: #93c5fd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+      }
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tagline {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 1.5rem 0;
+    }
+
+    button, input {
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button:hover, input:hover {
+      border-color: var(--accent);
+    }
+
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    #search {
+      min-width: 250px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 2rem auto;
+    }
+
+    .cursor-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .cursor-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .cursor-card:focus-within {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .cursor-preview {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cursor-name {
+      font-family: monospace;
+      font-size: 0.875rem;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--accent);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 3rem auto;
+    }
+
+    h2 {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--card-bg);
+    }
+
+    code {
+      background: var(--card-bg);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.875rem;
+    }
+
+    .install-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .install-block pre {
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    .anatomy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .anatomy-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+      }
+
+      .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Essential Cursor</h1>
+    <p class="tagline">41 ponteiros. Uma grade. Zero JavaScript.</p>
+    
+    <div class="controls" role="group" aria-label="Controles da galeria">
+      <input type="search" id="search" placeholder="Buscar cursor..." aria-label="Buscar cursor por nome">
+      <button id="theme-toggle" aria-pressed="false">🌙 Tema escuro</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" aria-labelledby="gallery-heading">
+      <h2 id="gallery-heading">Galeria Interativa</h2>
+      <p>Passe o mouse para preview, clique para copiar o código.</p>
+      
+      <div class="gallery" id="gallery" role="list"></div>
+    </section>
+
+    <section class="section" aria-labelledby="table-heading">
+      <h2 id="table-heading">Tabela de Cursores</h2>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">Hotspot (x, y)</th>
+            <th scope="col">Fallback</th>
+          </tr>
+        </thead>
+        <tbody id="cursor-table"></tbody>
+      </table>
+    </section>
+
+    <section class="section" aria-labelledby="anatomy-heading">
+      <h2 id="anatomy-heading">Anatomia do Cursor</h2>
+      <div class="anatomy-grid">
+        <div class="anatomy-item">
+          <strong>Grade base</strong>
+          <p><code>60×60 pixels</code></p>
+        </div>
+        <div class="anatomy-item">
+          <strong>Silhueta</strong>
+          <p><code>#111111</code></p>
+        </div>
+        <div class="anatomy-item">
+          <strong>Halo claro</strong>
+          <p><code>#ffffff</code></p>
+        </div>
+        <div class="anatomy-item">
+          <strong>Halo escuro</strong>
+          <p><code>#000000</code></p>
+        </div>
+        <div class="anatomy-item">
+          <strong>Respiro</strong>
+          <p><code>2px</code> das bordas</p>
+        </div>
+        <div class="anatomy-item">
+          <strong>Linecap</strong>
+          <p><code>round</code></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="install-heading">
+      <h2 id="install-heading">Instalação</h2>
+      
+      <div class="install-block">
+        <h3>jsDelivr com SRI</h3>
+        <pre><code id="sri-code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.0/dist/essential-cursors.min.css" integrity="" crossorigin="anonymous"&gt;</code></pre>
+        <button class="copy-btn" data-target="sri-code">Copiar hash SRI</button>
+      </div>
+
+      <div class="install-block">
+        <h3>npm</h3>
+        <pre><code>npm install essential-cursors</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Copiado!</div>
+
+  <script>
+    const cursors = [
+      "add", "add-object", "click", "copy-object", "crosshair", "default", "duplicate-object",
+      "e-resize", "ew-resize", "eyedropper", "grab", "grabbing", "hand-rotate", "help",
+      "location-pin", "move", "ne-resize", "nesw-resize", "not-allowed", "n-resize", "ns-resize",
+      "nw-resize", "nwse-resize", "pan", "pencil", "pencil-add", "pointer", "rotate",
+      "rotate-object", "rotate-selection", "scale-object", "se-resize", "s-resize", "sw-resize",
+      "text", "text-select", "wait", "w-resize", "zoom", "zoom-in", "zoom-out"
+    ];
+
+    const hotspots = {
+      "add": [14, 6, "copy"],
+      "add-object": [14, 6, "copy"],
+      "click": [30, 8, "pointer"],
+      "copy-object": [14, 6, "copy"],
+      "crosshair": [30, 30, "crosshair"],
+      "default": [14, 6, "default"],
+      "duplicate-object": [14, 6, "copy"],
+      "e-resize": [30, 30, "e-resize"],
+      "ew-resize": [30, 30, "ew-resize"],
+      "eyedropper": [12, 52, "crosshair"],
+      "grab": [30, 32, "grab"],
+      "grabbing": [30, 32, "grabbing"],
+      "hand-rotate": [30, 30, "grab"],
+      "help": [14, 6, "help"],
+      "location-pin": [30, 56, "pointer"],
+      "move": [30, 30, "move"],
+      "ne-resize": [30, 30, "ne-resize"],
+      "nesw-resize": [30, 30, "nesw-resize"],
+      "not-allowed": [30, 30, "not-allowed"],
+      "n-resize": [30, 30, "n-resize"],
+      "ns-resize": [30, 30, "ns-resize"],
+      "nw-resize": [30, 30, "nw-resize"],
+      "nwse-resize": [30, 30, "nwse-resize"],
+      "pan": [30, 32, "grab"],
+      "pencil": [12, 52, "crosshair"],
+      "pencil-add": [12, 52, "crosshair"],
+      "pointer": [30, 8, "pointer"],
+      "rotate": [30, 30, "grab"],
+      "rotate-object": [30, 30, "grab"],
+      "rotate-selection": [30, 30, "grab"],
+      "scale-object": [30, 30, "nwse-resize"],
+      "se-resize": [30, 30, "se-resize"],
+      "s-resize": [30, 30, "s-resize"],
+      "sw-resize": [30, 30, "sw-resize"],
+      "text": [30, 30, "text"],
+      "text-select": [30, 30, "text"],
+      "wait": [30, 30, "wait"],
+      "w-resize": [30, 30, "w-resize"],
+      "zoom": [26, 26, "zoom-in"],
+      "zoom-in": [26, 26, "zoom-in"],
+      "zoom-out": [26, 26, "zoom-out"]
+    };
+
+    const gallery = document.getElementById('gallery');
+    const tableBody = document.getElementById('cursor-table');
+    const searchInput = document.getElementById('search');
+    const themeToggle = document.getElementById('theme-toggle');
+    const toast = document.getElementById('toast');
+    const sriCode = document.getElementById('sri-code');
+
+    // Carregar hash SRI
+    fetch('../dist/integrity.json')
+      .then(r => r.json())
+      .then(data => {
+        const hash = data['essential-cursors.min.css']?.sha384 || '';
+        sriCode.innerHTML = `&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.0/dist/essential-cursors.min.css" integrity="${hash}" crossorigin="anonymous"&gt;`;
+      })
+      .catch(() => {});
+
+    function renderGallery(filter = '') {
+      gallery.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      cursors
+        .filter(name => name.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(name => {
+          const [hx, hy, fallback] = hotspots[name];
+
+          // Card da galeria
+          const card = document.createElement('div');
+          card.className = 'cursor-card';
+          card.setAttribute('role', 'listitem');
+          card.tabIndex = 0;
+          card.dataset.cursor = name;
+
+          const preview = document.createElement('div');
+          preview.className = 'cursor-preview';
+          preview.style.cursor = `var(--ec-${name})`;
+
+          const img = document.createElement('img');
+          img.src = `../src/svg/${name}.svg`;
+          img.alt = `Cursor ${name}`;
+          img.width = 48;
+          img.height = 48;
+
+          const nameEl = document.createElement('div');
+          nameEl.className = 'cursor-name';
+          nameEl.textContent = name;
+
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-btn';
+          copyBtn.textContent = 'Copiar';
+          copyBtn.setAttribute('aria-label', `Copiar código para cursor ${name}`);
+          copyBtn.addEventListener('click', () => {
+            const code = `<span class="ec-${name}">...</span>`;
+            navigator.clipboard.writeText(code).then(showToast);
+          });
+
+          preview.appendChild(img);
+          card.appendChild(preview);
+          card.appendChild(nameEl);
+          card.appendChild(copyBtn);
+          gallery.appendChild(card);
+
+          // Linha da tabela
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><code>${name}</code></td>
+            <td>${hx}, ${hy}</td>
+            <td><code>${fallback}</code></td>
+          `;
+          tableBody.appendChild(row);
+        });
+    }
+
+    function showToast(message = 'Copiado!') {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Toggle tema
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        themeToggle.textContent = '🌙 Tema escuro';
+        themeToggle.setAttribute('aria-pressed', 'false');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeToggle.textContent = '☀️ Tema claro';
+        themeToggle.setAttribute('aria-pressed', 'true');
+      }
+    });
+
+    // Busca
+    searchInput.addEventListener('input', (e) => {
+      renderGallery(e.target.value);
+    });
+
+    // Copiar hash SRI
+    document.querySelector('[data-target="sri-code"]').addEventListener('click', () => {
+      const hashMatch = sriCode.innerHTML.match(/integrity="([^"]+)"/);
+      if (hashMatch) {
+        navigator.clipboard.writeText(hashMatch[1]).then(showToast);
+      }
+    });
+
+    // Inicializar
+    renderGallery();
+  </script>
+</body>
+</html>
