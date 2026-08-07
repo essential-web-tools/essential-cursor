@@ -20,7 +20,7 @@
   <a href="https://www.npmjs.com/package/essential-cursors"><img src="https://img.shields.io/npm/v/essential-cursors.svg?style=flat-square" alt="npm version"></a>
   <a href="https://opensource.org/licenses/BSD-3-Clause"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg?style=flat-square" alt="license BSD-3-Clause"></a>
   <a href="https://bundlephobia.com/package/essential-cursors"><img src="https://img.shields.io/bundlephobia/minzip/essential-cursors?style=flat-square&label=gzip" alt="gzip size"></a>
-  <a href="https://github.com/essential-web-tools/essential-cursors/actions/workflows/ci.yml"><img src="https://github.com/essential-web-tools/essential-cursors/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <a href="https://github.com/essential-web-tools/essential-cursor/actions/workflows/ci.yml"><img src="https://github.com/essential-web-tools/essential-cursor/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
   <a href="https://www.jsdelivr.com/package/npm/essential-cursors"><img src="https://data.jsdelivr.com/v1/package/npm/essential-cursors/badge?style=flat-square" alt="jsDelivr"></a>
   <a href="#-ai-context"><img src="https://img.shields.io/badge/AI-Ready-black?style=flat-square&logo=openai" alt="AI Ready"></a>
 </p>
@@ -139,7 +139,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 <!-- Pinned version with Subresource Integrity (SRI) -->
 <link 
   rel="stylesheet" 
-  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.0/dist/essential-cursors.min.css"
+  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.4/dist/essential-cursors.min.css"
   integrity="sha384-qQ60ujaappdzuW5KRSu9rFuVDwc034aCozapGOQoqsuhGJgx04b3Ai6V5uZ87Zp+"
   crossorigin="anonymous">
 ```
@@ -149,7 +149,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 ### unpkg
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.0/dist/essential-cursors.min.css">
+<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.4/dist/essential-cursors.min.css">
 ```
 
 ### npm
@@ -351,7 +351,7 @@ To maintain supply chain security:
 
 2. **Signed Tags**
    ```bash
-   git tag -s v1.0.0 -m "Release v1.0.0"
+   git tag -s v1.0.0 -m "Release v1.0.4"
    ```
 
 3. **Dependabot** active for security updates

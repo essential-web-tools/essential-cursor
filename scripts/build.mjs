@@ -9,6 +9,7 @@ const rootDir = join(__dirname, '..');
 const srcSvgDir = join(rootDir, 'src/svg');
 const distDir = join(rootDir, 'dist');
 const hotspotsFile = join(rootDir, 'hotspots.json');
+const packageFile = join(rootDir, 'package.json');
 
 // Lista canônica de cursores (ordem alfabética)
 const CANONICAL_CURSORS = [
@@ -48,15 +49,48 @@ function computeSHA384(content) {
 }
 
 async function main() {
-  // Validar que todos os 41 arquivos SVG existem
+  const packageJson = JSON.parse(
+    await readFile(packageFile, 'utf-8')
+  );
+
+  const packageVersion = packageJson.version;
+  // Validar exatamente os SVGs canônicos
   const files = await readdir(srcSvgDir);
-  const svgFiles = files.filter(f => f.endsWith('.svg')).map(f => f.replace('.svg', ''));
-  
-  for (const cursor of CANONICAL_CURSORS) {
-    if (!svgFiles.includes(cursor)) {
-      console.error(`❌ Erro: SVG ausente para ${cursor}`);
-      process.exit(1);
-    }
+
+  const svgFiles = files
+    .filter(f => f.endsWith('.svg'))
+    .map(f => f.replace('.svg', ''));
+
+  const canonicalSet = new Set(CANONICAL_CURSORS);
+
+  const missingSvgFiles = CANONICAL_CURSORS.filter(
+    cursor => !svgFiles.includes(cursor)
+  );
+
+  const extraSvgFiles = svgFiles.filter(
+    cursor => !canonicalSet.has(cursor)
+  );
+
+  if (missingSvgFiles.length > 0) {
+    console.error(
+      `❌ SVGs ausentes: ${missingSvgFiles.join(', ')}`
+    );
+    process.exit(1);
+  }
+
+  if (extraSvgFiles.length > 0) {
+    console.error(
+      `❌ SVGs não canônicos: ${extraSvgFiles.join(', ')}`
+    );
+    process.exit(1);
+  }
+
+  if (svgFiles.length !== CANONICAL_CURSORS.length) {
+    console.error(
+      `❌ Quantidade inválida de SVGs: ${svgFiles.length}. ` +
+      `Esperado: ${CANONICAL_CURSORS.length}.`
+    );
+    process.exit(1);
   }
   
   // Carregar hotspots
@@ -81,8 +115,29 @@ async function main() {
     }
   }
   
+  const hotspotKeys = Object.keys(hotspots);
+
+  if (hotspotKeys.length !== CANONICAL_CURSORS.length) {
+    console.error(
+      `❌ Quantidade inválida de hotspots: ${hotspotKeys.length}. ` +
+      `Esperado: ${CANONICAL_CURSORS.length}.`
+    );
+    process.exit(1);
+  }
+
+  const extraHotspots = hotspotKeys.filter(
+    cursor => !canonicalSet.has(cursor)
+  );
+
+  if (extraHotspots.length > 0) {
+    console.error(
+      `❌ Hotspots não canônicos: ${extraHotspots.join(', ')}`
+    );
+    process.exit(1);
+  }
+
   // Gerar CSS
-  let cssContent = `/*! Essential Cursor v1.0.0 | BSD-3-Clause | 41 SVG cursors on a 60×60 grid */\n\n`;
+  let cssContent = `/*! Essential Cursor v${packageVersion} | BSD-3-Clause | 41 SVG cursors */\n\n`;
   cssContent += `:root {\n`;
   
   // Tema claro (default) - halo branco
@@ -90,13 +145,24 @@ async function main() {
     const svgPath = join(srcSvgDir, `${cursor}.svg`);
     let svgContent = await readFile(svgPath, 'utf-8');
     
-    // Adicionar halo branco para tema claro
+    // Adicionar halo branco de forma independente da estrutura interna do SVG
+    const haloId = `halo-light-${cursor}`;
+
     svgContent = svgContent.replace(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">',
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60"><defs><filter id="halo-light"><feMorphology operator="dilate" radius="2"/><feComposite operator="out" in2="SourceGraphic"/><feFlood flood-color="#ffffff"/><feComposite operator="in" in2="SourceGraphic"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
+      /<svg([^>]*)>/,
+      `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
+      `<feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated"/>` +
+      `<feFlood flood-color="#ffffff" result="haloColor"/>` +
+      `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
+      `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
+      `</filter></defs></svg>`
     );
-    svgContent = svgContent.replace('stroke="#111111"', 'stroke="#111111" filter="url(#halo-light)"');
-    
+
+    svgContent = svgContent.replace(
+      /(<svg[^>]*)(>)/,
+      `$1 filter="url(#${haloId})"$2`
+    );
+
     const dataUri = encodeSVG(svgContent);
     const [hx, hy, fallback] = hotspots[cursor];
     cssContent += `  --ec-${cursor}: url("${dataUri}") ${hx} ${hy}, ${fallback};\n`;
@@ -110,13 +176,24 @@ async function main() {
     const svgPath = join(srcSvgDir, `${cursor}.svg`);
     let svgContent = await readFile(svgPath, 'utf-8');
     
-    // Adicionar halo preto para tema escuro
+    // Tema escuro: halo branco para manter cursores escuros visíveis
+    const haloId = `halo-dark-${cursor}`;
+
     svgContent = svgContent.replace(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">',
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60"><defs><filter id="halo-dark"><feMorphology operator="dilate" radius="2"/><feComposite operator="out" in2="SourceGraphic"/><feFlood flood-color="#000000"/><feComposite operator="in" in2="SourceGraphic"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
+      /<svg([^>]*)>/,
+      `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
+      `<feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated"/>` +
+      `<feFlood flood-color="#ffffff" result="haloColor"/>` +
+      `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
+      `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
+      `</filter></defs></svg>`
     );
-    svgContent = svgContent.replace('stroke="#111111"', 'stroke="#111111" filter="url(#halo-dark)"');
-    
+
+    svgContent = svgContent.replace(
+      /(<svg[^>]*)(>)/,
+      `$1 filter="url(#${haloId})"$2`
+    );
+
     const dataUri = encodeSVG(svgContent);
     const [hx, hy, fallback] = hotspots[cursor];
     cssContent += `  --ec-${cursor}: url("${dataUri}") ${hx} ${hy}, ${fallback};\n`;
@@ -183,7 +260,8 @@ async function main() {
   console.log('---------------------------|----------------');
   console.log(`essential-cursors.css       | ${cssBytes.length.toString().padStart(14)}`);
   console.log(`essential-cursors.min.css   | ${minCssBytes.length.toString().padStart(14)}`);
-  console.log(`\nTotal gzip estimado: < 6 kB ✓`);
+  console.log(`\nCSS normal: ${cssBytes.length} bytes`);
+  console.log(`CSS minificado: ${minCssBytes.length} bytes`);
   console.log('\n✅ Validações passed:');
   console.log('   • 41 arquivos SVG presentes');
   console.log('   • Hotspots dentro de 0-60');

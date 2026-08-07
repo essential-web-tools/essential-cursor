@@ -1,16 +1,16 @@
 {
   "name": "essential-cursors",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Essential Cursor — professional SVG cursor system by Essential Web Tools",
   "license": "BSD-3-Clause",
   "author": "Essential Web Tools",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/essential-web-tools/essential-cursors.git"
+    "url": "git+https://github.com/essential-web-tools/essential-cursor.git"
   },
-  "homepage": "https://github.com/essential-web-tools/essential-cursors",
+  "homepage": "https://github.com/essential-web-tools/essential-cursor",
   "bugs": {
-    "url": "https://github.com/essential-web-tools/essential-cursors/issues"
+    "url": "https://github.com/essential-web-tools/essential-cursor/issues"
   },
   "files": [
     "dist",
