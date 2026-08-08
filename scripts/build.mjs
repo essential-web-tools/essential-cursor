@@ -32,8 +32,18 @@ const VALID_FALLBACKS = new Set([
 ]);
 
 function encodeSVG(svgContent) {
+  // Normaliza quebras de linha/espaços (SVGs exportados do Illustrator vêm
+  // com CRLF), pois uma quebra de linha crua dentro de uma string CSS
+  // entre aspas é inválida e quebra o parser do navegador.
+  let normalized = svgContent
+    .replace(/\r\n?/g, '\n')   // CRLF/CR -> LF
+    .replace(/\n+/g, ' ')      // colapsa quebras de linha em espaço
+    .replace(/\t/g, ' ')       // tabs -> espaço
+    .replace(/ {2,}/g, ' ')    // colapsa espaços múltiplos
+    .trim();
+
   // Codificação para data URI: % # < > aspas
-  let encoded = svgContent
+  let encoded = normalized
     .replace(/%/g, '%25')
     .replace(/#/g, '%23')
     .replace(/</g, '%3C')
@@ -155,7 +165,7 @@ async function main() {
       `<feFlood flood-color="#ffffff" result="haloColor"/>` +
       `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
       `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
-      `</filter></defs></svg>`
+      `</filter></defs>`
     );
 
     svgContent = svgContent.replace(
@@ -186,7 +196,7 @@ async function main() {
       `<feFlood flood-color="#ffffff" result="haloColor"/>` +
       `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
       `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
-      `</filter></defs></svg>`
+      `</filter></defs>`
     );
 
     svgContent = svgContent.replace(

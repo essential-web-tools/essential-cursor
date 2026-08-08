@@ -127,6 +127,16 @@ test('encoding íntegro', async () => {
     cssContent.includes('data:image/svg+xml'),
     'Deve ter data URIs'
   );
+  // Verificar que não há quebras de linha cruas (\r ou \n) dentro do CSS,
+  // já que newline literal dentro de uma string entre aspas é CSS inválido
+  ok(
+    !cssContent.includes('\r'),
+    'Não deve ter carriage return (\\r) cru no CSS'
+  );
+  ok(
+    !/url\("[^"]*\n[^"]*"\)/.test(cssContent),
+    'Não deve ter quebra de linha (\\n) crua dentro de uma string url("...")'
+  );
 });
 
 test('build é idempotente', async () => {
