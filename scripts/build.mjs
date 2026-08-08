@@ -31,6 +31,47 @@ const VALID_FALLBACKS = new Set([
   'col-resize', 'row-resize', 'all-scroll', 'zoom-in', 'zoom-out'
 ]);
 
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÃO DO HALO (contorno em volta dos ícones)
+// Edite estes valores e rode `npm run build` para regenerar todos os cursores.
+//   radius        -> espessura do contorno (menor = mais fino)
+//   blur          -> suavização das bordas do contorno (maior = mais suave)
+//   colorLight    -> cor do halo no tema claro (padrão)
+//   colorDark     -> cor do halo no tema escuro
+// ─────────────────────────────────────────────────────────────────────────
+const HALO_CONFIG = {
+  radius: 1,
+  blur: 0.6,
+  colorLight: '#ffffff',
+  colorDark: '#ffffff',
+};
+
+/**
+ * Gera o bloco <defs><filter>...</filter></defs> do halo e injeta o atributo
+ * filter="" na tag <svg>. Centralizado aqui para os temas claro/escuro nunca
+ * ficarem dessincronizados entre si.
+ */
+function applyHaloFilter(svgContent, haloId, color) {
+  const { radius, blur } = HALO_CONFIG;
+  svgContent = svgContent.replace(
+    /<svg([^>]*)>/,
+    `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
+    `<feMorphology in="SourceAlpha" operator="dilate" radius="${radius}" result="dilated"/>` +
+    `<feGaussianBlur in="dilated" stdDeviation="${blur}" result="softened"/>` +
+    `<feFlood flood-color="${color}" result="haloColor"/>` +
+    `<feComposite in="haloColor" in2="softened" operator="in" result="halo"/>` +
+    `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
+    `</filter></defs>`
+  );
+
+  svgContent = svgContent.replace(
+    /(<svg[^>]*)(>)/,
+    `$1 filter="url(#${haloId})"$2`
+  );
+
+  return svgContent;
+}
+
 function encodeSVG(svgContent) {
   // Normaliza quebras de linha/espaços (SVGs exportados do Illustrator vêm
   // com CRLF), pois uma quebra de linha crua dentro de uma string CSS
@@ -150,28 +191,13 @@ async function main() {
   let cssContent = `/*! Essential Cursor v${packageVersion} | BSD-3-Clause | 41 SVG cursors */\n\n`;
   cssContent += `:root {\n`;
   
-  // Tema claro (default) - halo branco
+  // Tema claro (default) - halo fino e suave
   for (const cursor of CANONICAL_CURSORS) {
     const svgPath = join(srcSvgDir, `${cursor}.svg`);
     let svgContent = await readFile(svgPath, 'utf-8');
-    
-    // Adicionar halo branco de forma independente da estrutura interna do SVG
+
     const haloId = `halo-light-${cursor}`;
-
-    svgContent = svgContent.replace(
-      /<svg([^>]*)>/,
-      `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
-      `<feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated"/>` +
-      `<feFlood flood-color="#ffffff" result="haloColor"/>` +
-      `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
-      `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
-      `</filter></defs>`
-    );
-
-    svgContent = svgContent.replace(
-      /(<svg[^>]*)(>)/,
-      `$1 filter="url(#${haloId})"$2`
-    );
+    svgContent = applyHaloFilter(svgContent, haloId, HALO_CONFIG.colorLight);
 
     const dataUri = encodeSVG(svgContent);
     const [hx, hy, fallback] = hotspots[cursor];
@@ -180,29 +206,14 @@ async function main() {
   
   cssContent += `}\n\n`;
   
-  // Tema escuro - halo preto
+  // Tema escuro - halo fino e suave, cor própria (mantém o cursor visível)
   cssContent += `[data-theme="dark"],\n[data-cursor-theme="dark"] {\n`;
   for (const cursor of CANONICAL_CURSORS) {
     const svgPath = join(srcSvgDir, `${cursor}.svg`);
     let svgContent = await readFile(svgPath, 'utf-8');
-    
-    // Tema escuro: halo branco para manter cursores escuros visíveis
+
     const haloId = `halo-dark-${cursor}`;
-
-    svgContent = svgContent.replace(
-      /<svg([^>]*)>/,
-      `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
-      `<feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated"/>` +
-      `<feFlood flood-color="#ffffff" result="haloColor"/>` +
-      `<feComposite in="haloColor" in2="dilated" operator="in" result="halo"/>` +
-      `<feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>` +
-      `</filter></defs>`
-    );
-
-    svgContent = svgContent.replace(
-      /(<svg[^>]*)(>)/,
-      `$1 filter="url(#${haloId})"$2`
-    );
+    svgContent = applyHaloFilter(svgContent, haloId, HALO_CONFIG.colorDark);
 
     const dataUri = encodeSVG(svgContent);
     const [hx, hy, fallback] = hotspots[cursor];
@@ -219,6 +230,33 @@ async function main() {
   for (const cursor of CANONICAL_CURSORS) {
     cssContent += `[data-cursor="${cursor}"] {\n  cursor: var(--ec-${cursor});\n}\n\n`;
   }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Auto-click: em elementos tipicamente interativos (links, botões, etc.),
+  // troca automaticamente o cursor padrão/pointer do navegador pelo cursor
+  // de "clique" da biblioteca. Ativado por opt-in via [data-cursor-auto]
+  // (no <html>, <body> ou em qualquer container). Para um elemento manter o
+  // cursor nativo do navegador mesmo dentro de uma área com auto-click,
+  // adicione [data-cursor-native] nele (ou em um ancestral).
+  // ───────────────────────────────────────────────────────────────────────
+  cssContent += `/* Auto-click: opt-in via [data-cursor-auto]; opt-out pontual via [data-cursor-native] */\n`;
+  cssContent += `[data-cursor-auto] a,\n` +
+    `[data-cursor-auto] button,\n` +
+    `[data-cursor-auto] [role="button"],\n` +
+    `[data-cursor-auto] input[type="button"],\n` +
+    `[data-cursor-auto] input[type="submit"],\n` +
+    `[data-cursor-auto] input[type="reset"],\n` +
+    `[data-cursor-auto] label[for],\n` +
+    `[data-cursor-auto] select,\n` +
+    `[data-cursor-auto] summary,\n` +
+    `[data-cursor-auto] [onclick],\n` +
+    `[data-cursor-auto] [tabindex]:not([tabindex="-1"]) {\n` +
+    `  cursor: var(--ec-click);\n` +
+    `}\n\n`;
+  cssContent += `[data-cursor-auto] [data-cursor-native],\n` +
+    `[data-cursor-auto] [data-cursor-native] * {\n` +
+    `  cursor: revert;\n` +
+    `}\n\n`;
   
   // Validação: verificar encoding (apenas %25, %23, %3C, %3E são permitidos)
   const cssCheck = cssContent.replace(/%25|%23|%3C|%3E/g, '');

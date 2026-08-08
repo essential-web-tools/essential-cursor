@@ -139,7 +139,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 <!-- Pinned version with Subresource Integrity (SRI) -->
 <link 
   rel="stylesheet" 
-  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.5/dist/essential-cursors.min.css"
+  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.6/dist/essential-cursors.min.css"
   integrity="sha384-qQ60ujaappdzuW5KRSu9rFuVDwc034aCozapGOQoqsuhGJgx04b3Ai6V5uZ87Zp+"
   crossorigin="anonymous">
 ```
@@ -149,7 +149,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 ### unpkg
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.5/dist/essential-cursors.min.css">
+<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.6/dist/essential-cursors.min.css">
 ```
 
 ### npm
@@ -221,8 +221,8 @@ npm install essential-cursors
 
 The library automatically supports two visual themes:
 
-- **Light Theme (Default):** Black silhouette (#111111) with a white halo.
-- **Dark Theme:** White silhouette with a black halo.
+- **Light Theme (Default):** Icon silhouette with a thin, soft white halo.
+- **Dark Theme:** Same icon with its own halo color/tuning, kept legible over dark backgrounds.
 
 ### Activation
 
@@ -242,6 +242,51 @@ The library automatically supports two visual themes:
 ```
 
 Cursors automatically swap using `[data-theme="dark"]` and `[data-cursor-theme="dark"]` selectors.
+
+### Halo Style (Editable)
+
+Every cursor icon is rendered with a thin, soft halo/outline behind it so it stays visible on any background. The halo is generated at build time from a single config object in `scripts/build.mjs`, so it's fully editable without touching each SVG:
+
+```js
+// scripts/build.mjs
+const HALO_CONFIG = {
+  radius: 1,        // outline thickness - lower = thinner
+  blur: 0.6,         // outline softness - higher = softer/smoother edge
+  colorLight: '#ffffff',
+  colorDark: '#ffffff',
+};
+```
+
+After changing any value, regenerate the CSS with:
+
+```bash
+npm run build
+```
+
+---
+
+## 🖱️ Auto-click Cursor
+
+Opt-in behavior that automatically swaps the browser's default `pointer`/`default` cursor for this library's **click** cursor on typical interactive elements (`a`, `button`, `[role="button"]`, form controls, `[onclick]`, focusable `[tabindex]`, etc.) - no JavaScript required.
+
+```html
+<!-- Enable everywhere -->
+<html data-cursor-auto>
+
+<!-- Or scope it to a section -->
+<div data-cursor-auto>
+  <a href="#">This link uses the click cursor</a>
+</div>
+```
+
+To keep the browser's native cursor on a specific element even inside an auto-click area, add `data-cursor-native` to it (or to an ancestor):
+
+```html
+<div data-cursor-auto>
+  <a href="#">Uses --ec-click</a>
+  <a href="#" data-cursor-native>Keeps the native browser cursor</a>
+</div>
+```
 
 ---
 
@@ -351,7 +396,7 @@ To maintain supply chain security:
 
 2. **Signed Tags**
    ```bash
-   git tag -s v1.0.5 -m "Release v1.0.5"
+   git tag -s v1.0.6 -m "Release v1.0.6"
    ```
 
 3. **Dependabot** active for security updates
