@@ -302,7 +302,7 @@
       
       <div class="install-block">
         <h3>jsDelivr com SRI</h3>
-        <pre><code id="sri-code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.4/dist/essential-cursors.min.css" integrity="" crossorigin="anonymous"&gt;</code></pre>
+        <pre><code id="sri-code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.5/dist/essential-cursors.min.css" integrity="" crossorigin="anonymous"&gt;</code></pre>
         <button class="copy-btn" data-target="sri-code">Copiar hash SRI</button>
       </div>
 
@@ -381,7 +381,7 @@
       .then(r => r.json())
       .then(data => {
         const hash = data['essential-cursors.min.css']?.sha384 || '';
-        sriCode.innerHTML = `&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.4/dist/essential-cursors.min.css" integrity="${hash}" crossorigin="anonymous"&gt;`;
+        sriCode.innerHTML = `&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.5/dist/essential-cursors.min.css" integrity="${hash}" crossorigin="anonymous"&gt;`;
       })
       .catch(() => {});
 

@@ -139,7 +139,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 <!-- Pinned version with Subresource Integrity (SRI) -->
 <link 
   rel="stylesheet" 
-  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.4/dist/essential-cursors.min.css"
+  href="https://cdn.jsdelivr.net/npm/essential-cursors@1.0.5/dist/essential-cursors.min.css"
   integrity="sha384-qQ60ujaappdzuW5KRSu9rFuVDwc034aCozapGOQoqsuhGJgx04b3Ai6V5uZ87Zp+"
   crossorigin="anonymous">
 ```
@@ -149,7 +149,7 @@ No JavaScript. No heavy bundles. No layout shifts. Just drop in a single CSS fil
 ### unpkg
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.4/dist/essential-cursors.min.css">
+<link rel="stylesheet" href="https://unpkg.com/essential-cursors@1.0.5/dist/essential-cursors.min.css">
 ```
 
 ### npm
@@ -351,7 +351,7 @@ To maintain supply chain security:
 
 2. **Signed Tags**
    ```bash
-   git tag -s v1.0.0 -m "Release v1.0.4"
+   git tag -s v1.0.5 -m "Release v1.0.5"
    ```
 
 3. **Dependabot** active for security updates
