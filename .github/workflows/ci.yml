@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
 
+# Menor privilégio possível: este workflow só lê o repositório.
 permissions:
   contents: read
 
@@ -15,17 +16,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Actions de terceiros fixadas por commit SHA (não por tag mutável),
+      # para evitar supply-chain attack via re-apontamento de tag.
+      # Atualizadas automaticamente via Dependabot (.github/dependabot.yml).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
         with:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (integridade estrita do lockfile)
+        run: npm ci --ignore-scripts
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
 
       - name: Build
         run: npm run build
@@ -33,5 +40,5 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Verify generated files
+      - name: Verify generated files are committed and unmodified
         run: git diff --exit-code -- dist

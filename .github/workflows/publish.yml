@@ -1,0 +1,60 @@
+name: Publish to npm
+
+# Só roda quando uma tag de release assinada (v*) é enviada, nunca em push comum.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build, test and publish with provenance
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write # necessário para OIDC trusted publishing / npm provenance
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Verify tag matches package.json version
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Tag v$TAG_VERSION não bate com package.json ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - name: Verify generated files are committed and unmodified
+        run: git diff --exit-code -- dist
+
+      # --provenance usa o OIDC token do GitHub Actions (id-token: write acima)
+      # para assinar a proveniência do pacote publicado — sem precisar de
+      # NPM_TOKEN de longa duração salvo em Secrets.
+      - name: Publish
+        run: npm publish --provenance --access public

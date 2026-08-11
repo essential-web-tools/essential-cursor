@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Mantém as GitHub Actions fixadas por SHA atualizadas automaticamente
+  # (o Dependabot entende SHA pinning e propõe o novo hash + comentário
+  # de versão em conjunto).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

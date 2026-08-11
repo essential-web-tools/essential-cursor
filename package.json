@@ -1,6 +1,6 @@
 {
   "name": "essential-cursors",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Essential Cursor — professional SVG cursor system by Essential Web Tools",
   "license": "BSD-3-Clause",
   "author": "Essential Web Tools",
@@ -41,6 +41,7 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

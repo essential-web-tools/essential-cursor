@@ -34,25 +34,51 @@ const VALID_FALLBACKS = new Set([
 // ─────────────────────────────────────────────────────────────────────────
 // CONFIGURAÇÃO DO HALO (contorno em volta dos ícones)
 // Edite estes valores e rode `npm run build` para regenerar todos os cursores.
-//   radius        -> espessura do contorno (menor = mais fino)
+//   radius        -> espessura do contorno (0 = sem halo)
 //   blur          -> suavização das bordas do contorno (maior = mais suave)
-//   colorLight    -> cor do halo no tema claro (padrão)
+//   colorLight    -> cor do halo no tema claro
 //   colorDark     -> cor do halo no tema escuro
+// Padrão: sem halo (radius: 0). Aumente o radius para reativar o contorno.
 // ─────────────────────────────────────────────────────────────────────────
 const HALO_CONFIG = {
-  radius: 1,
+  radius: 0,
   blur: 0.6,
   colorLight: '#ffffff',
   colorDark: '#ffffff',
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÃO DE COR DO ÍCONE (cor sólida única por tema)
+// Edite estes valores e rode `npm run build` para regenerar todos os cursores.
+// ─────────────────────────────────────────────────────────────────────────
+const ICON_COLOR_CONFIG = {
+  light: '#000000', // tema claro: cursor preto sólido
+  dark: '#ffffff',  // tema escuro: cursor branco sólido
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÃO DO ESTADO "CLIQUE" (variante -click de cada cursor)
+// Trocada automaticamente via CSS puro (:active), sem JavaScript.
+//   style   -> 'jelly' (compressão elástica) ou 'genie' (estica/afina)
+//   jelly   -> scaleX/scaleY simulam um "aperto" mole no instante do clique
+//   genie   -> scaleX/scaleY/skew simulam o ícone sendo "sugado/esticado"
+// Edite os valores e rode `npm run build` para regenerar as variantes -click.
+// ─────────────────────────────────────────────────────────────────────────
+const CLICK_CONFIG = {
+  style: 'jelly', // 'jelly' | 'genie'
+  jelly: { scaleX: 1.16, scaleY: 0.8, skewX: 0 },
+  genie: { scaleX: 0.62, scaleY: 1.32, skewX: -10 },
+};
+
 /**
  * Gera o bloco <defs><filter>...</filter></defs> do halo e injeta o atributo
  * filter="" na tag <svg>. Centralizado aqui para os temas claro/escuro nunca
- * ficarem dessincronizados entre si.
+ * ficarem dessincronizados entre si. Se radius <= 0, não aplica halo algum.
  */
 function applyHaloFilter(svgContent, haloId, color) {
   const { radius, blur } = HALO_CONFIG;
+  if (radius <= 0) return svgContent;
+
   svgContent = svgContent.replace(
     /<svg([^>]*)>/,
     `<svg$1><defs><filter id="${haloId}" x="-30%" y="-30%" width="160%" height="160%">` +
@@ -69,6 +95,40 @@ function applyHaloFilter(svgContent, haloId, color) {
     `$1 filter="url(#${haloId})"$2`
   );
 
+  return svgContent;
+}
+
+/**
+ * Força o ícone a usar uma cor sólida única, independente do que o SVG
+ * original tinha. Envolve todo o conteúdo em <g fill="COLOR">, que os
+ * paths herdam automaticamente (a menos que já tenham fill próprio).
+ */
+function applySolidColor(svgContent, color) {
+  svgContent = svgContent.replace(
+    /(<svg[^>]*>)/,
+    `$1<g fill="${color}">`
+  );
+  svgContent = svgContent.replace(/<\/svg>\s*$/, '</g></svg>');
+  return svgContent;
+}
+
+/**
+ * Gera a variante "-click" do ícone (usada via CSS :active, sem JS): aplica
+ * uma transformação afim (scale/skew) centralizada no viewBox para simular
+ * um aperto (jelly) ou um estica-e-afina (genie) no instante do clique.
+ */
+function applyClickTransform(svgContent, viewBoxW, viewBoxH) {
+  const cfg = CLICK_CONFIG[CLICK_CONFIG.style];
+  const cx = viewBoxW / 2;
+  const cy = viewBoxH / 2;
+  const transform =
+    `translate(${cx} ${cy}) scale(${cfg.scaleX} ${cfg.scaleY}) skewX(${cfg.skewX}) translate(${-cx} ${-cy})`;
+
+  svgContent = svgContent.replace(
+    /(<svg[^>]*>)/,
+    `$1<g transform="${transform}">`
+  );
+  svgContent = svgContent.replace(/<\/svg>\s*$/, '</g></svg>');
   return svgContent;
 }
 
@@ -187,58 +247,92 @@ async function main() {
     process.exit(1);
   }
 
+  // Helper: monta o data URI de um cursor para um tema e variante (normal/click)
+  async function buildCursorDataUri(cursor, theme) {
+    const svgPath = join(srcSvgDir, `${cursor}.svg`);
+    let raw = await readFile(svgPath, 'utf-8');
+
+    const viewBoxMatch = raw.match(/viewBox="[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)"/);
+    const vbW = viewBoxMatch ? parseFloat(viewBoxMatch[1]) : 66.8;
+    const vbH = viewBoxMatch ? parseFloat(viewBoxMatch[2]) : 66.8;
+
+    const iconColor = theme === 'dark' ? ICON_COLOR_CONFIG.dark : ICON_COLOR_CONFIG.light;
+    const haloColor = theme === 'dark' ? HALO_CONFIG.colorDark : HALO_CONFIG.colorLight;
+
+    let normalSvg = applySolidColor(raw, iconColor);
+    normalSvg = applyHaloFilter(normalSvg, `halo-${theme}-${cursor}`, haloColor);
+
+    let clickSvg = applyClickTransform(applySolidColor(raw, iconColor), vbW, vbH);
+    clickSvg = applyHaloFilter(clickSvg, `halo-${theme}-${cursor}-click`, haloColor);
+
+    return {
+      normal: encodeSVG(normalSvg),
+      click: encodeSVG(clickSvg),
+    };
+  }
+
   // Gerar CSS
   let cssContent = `/*! Essential Cursor v${packageVersion} | BSD-3-Clause | 41 SVG cursors */\n\n`;
   cssContent += `:root {\n`;
-  
-  // Tema claro (default) - halo fino e suave
+
+  // Tema claro (default) - cor sólida preta, sem halo (configurável)
   for (const cursor of CANONICAL_CURSORS) {
-    const svgPath = join(srcSvgDir, `${cursor}.svg`);
-    let svgContent = await readFile(svgPath, 'utf-8');
-
-    const haloId = `halo-light-${cursor}`;
-    svgContent = applyHaloFilter(svgContent, haloId, HALO_CONFIG.colorLight);
-
-    const dataUri = encodeSVG(svgContent);
+    const { normal, click } = await buildCursorDataUri(cursor, 'light');
     const [hx, hy, fallback] = hotspots[cursor];
-    cssContent += `  --ec-${cursor}: url("${dataUri}") ${hx} ${hy}, ${fallback};\n`;
+    cssContent += `  --ec-${cursor}: url("${normal}") ${hx} ${hy}, ${fallback};\n`;
+    cssContent += `  --ec-${cursor}-click: url("${click}") ${hx} ${hy}, ${fallback};\n`;
   }
-  
+
   cssContent += `}\n\n`;
-  
-  // Tema escuro - halo fino e suave, cor própria (mantém o cursor visível)
+
+  // Tema escuro - cor sólida branca, sem halo (configurável)
   cssContent += `[data-theme="dark"],\n[data-cursor-theme="dark"] {\n`;
   for (const cursor of CANONICAL_CURSORS) {
-    const svgPath = join(srcSvgDir, `${cursor}.svg`);
-    let svgContent = await readFile(svgPath, 'utf-8');
-
-    const haloId = `halo-dark-${cursor}`;
-    svgContent = applyHaloFilter(svgContent, haloId, HALO_CONFIG.colorDark);
-
-    const dataUri = encodeSVG(svgContent);
+    const { normal, click } = await buildCursorDataUri(cursor, 'dark');
     const [hx, hy, fallback] = hotspots[cursor];
-    cssContent += `  --ec-${cursor}: url("${dataUri}") ${hx} ${hy}, ${fallback};\n`;
+    cssContent += `  --ec-${cursor}: url("${normal}") ${hx} ${hy}, ${fallback};\n`;
+    cssContent += `  --ec-${cursor}-click: url("${click}") ${hx} ${hy}, ${fallback};\n`;
   }
   cssContent += `}\n\n`;
-  
-  // Classes utilitárias
+
+  // Classes utilitárias (+ estado de clique via :active, 100% CSS, sem JS)
   for (const cursor of CANONICAL_CURSORS) {
-    cssContent += `.ec-${cursor} {\n  cursor: var(--ec-${cursor});\n}\n\n`;
+    cssContent += `.ec-${cursor} {\n  cursor: var(--ec-${cursor});\n}\n`;
+    cssContent += `.ec-${cursor}:active {\n  cursor: var(--ec-${cursor}-click);\n}\n\n`;
   }
-  
-  // Data attributes
+
+  // Data attributes (+ estado de clique via :active, 100% CSS, sem JS)
   for (const cursor of CANONICAL_CURSORS) {
-    cssContent += `[data-cursor="${cursor}"] {\n  cursor: var(--ec-${cursor});\n}\n\n`;
+    cssContent += `[data-cursor="${cursor}"] {\n  cursor: var(--ec-${cursor});\n}\n`;
+    cssContent += `[data-cursor="${cursor}"]:active {\n  cursor: var(--ec-${cursor}-click);\n}\n\n`;
   }
 
   // ───────────────────────────────────────────────────────────────────────
-  // Auto-click: em elementos tipicamente interativos (links, botões, etc.),
-  // troca automaticamente o cursor padrão/pointer do navegador pelo cursor
-  // de "clique" da biblioteca. Ativado por opt-in via [data-cursor-auto]
-  // (no <html>, <body> ou em qualquer container). Para um elemento manter o
-  // cursor nativo do navegador mesmo dentro de uma área com auto-click,
-  // adicione [data-cursor-native] nele (ou em um ancestral).
+  // Estado de clique nativo (sem JavaScript): ao pressionar o botão do
+  // mouse, o cursor "default" vira --ec-default-click e o "pointer" vira
+  // --ec-pointer-click automaticamente, via :active. O estilo da variante
+  // -click (jelly ou genie) é definido em CLICK_CONFIG.style acima.
   // ───────────────────────────────────────────────────────────────────────
+  cssContent += `/* Estado de clique via :active (sem JS). Estilo: ${CLICK_CONFIG.style} */\n`;
+  cssContent += `html:active {\n  cursor: var(--ec-default-click);\n}\n\n`;
+  cssContent += `a:active,\n` +
+    `button:active,\n` +
+    `[role="button"]:active,\n` +
+    `input[type="button"]:active,\n` +
+    `input[type="submit"]:active,\n` +
+    `input[type="reset"]:active,\n` +
+    `label[for]:active,\n` +
+    `select:active,\n` +
+    `summary:active {\n` +
+    `  cursor: var(--ec-pointer-click);\n` +
+    `}\n\n`;
+
+  // Auto-click: em elementos tipicamente interativos, troca automaticamente
+  // o cursor padrão/pointer do navegador pelo cursor de "clique" da
+  // biblioteca (mesmo antes de pressionar o botão). Ativado por opt-in via
+  // [data-cursor-auto] (no <html>, <body> ou em qualquer container). Para um
+  // elemento manter o cursor nativo do navegador mesmo dentro de uma área
+  // com auto-click, adicione [data-cursor-native] nele (ou em um ancestral).
   cssContent += `/* Auto-click: opt-in via [data-cursor-auto]; opt-out pontual via [data-cursor-native] */\n`;
   cssContent += `[data-cursor-auto] a,\n` +
     `[data-cursor-auto] button,\n` +
@@ -251,13 +345,27 @@ async function main() {
     `[data-cursor-auto] summary,\n` +
     `[data-cursor-auto] [onclick],\n` +
     `[data-cursor-auto] [tabindex]:not([tabindex="-1"]) {\n` +
-    `  cursor: var(--ec-click);\n` +
+    `  cursor: var(--ec-pointer);\n` +
+    `}\n\n`;
+  cssContent += `[data-cursor-auto] a:active,\n` +
+    `[data-cursor-auto] button:active,\n` +
+    `[data-cursor-auto] [role="button"]:active,\n` +
+    `[data-cursor-auto] input[type="button"]:active,\n` +
+    `[data-cursor-auto] input[type="submit"]:active,\n` +
+    `[data-cursor-auto] input[type="reset"]:active,\n` +
+    `[data-cursor-auto] label[for]:active,\n` +
+    `[data-cursor-auto] select:active,\n` +
+    `[data-cursor-auto] summary:active,\n` +
+    `[data-cursor-auto] [onclick]:active,\n` +
+    `[data-cursor-auto] [tabindex]:not([tabindex="-1"]):active {\n` +
+    `  cursor: var(--ec-pointer-click);\n` +
     `}\n\n`;
   cssContent += `[data-cursor-auto] [data-cursor-native],\n` +
     `[data-cursor-auto] [data-cursor-native] * {\n` +
     `  cursor: revert;\n` +
     `}\n\n`;
   
+
   // Validação: verificar encoding (apenas %25, %23, %3C, %3E são permitidos)
   const cssCheck = cssContent.replace(/%25|%23|%3C|%3E/g, '');
   if (cssCheck.includes('%')) {
